@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>主管彙整後台 · 客服日回報</title>
+<style>
+:root{--ink:#1e293b;--muted:#64748b;--line:#e2e8f0;--brand:#7c3aed;--brand2:#4f46e5;--accent:#8b5cf6;
+ --done:#16a34a;--doneBg:#dcfce7;--partial:#d97706;--partialBg:#fef3c7;--fail:#dc2626;--failBg:#fee2e2;--shadow:0 1px 3px rgba(15,23,42,.08);}
+*{box-sizing:border-box}body{margin:0;font-family:"Segoe UI","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;background:#f1f5f9;color:var(--ink)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 14px 80px}
+header.top{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;padding:16px;border-radius:0 0 18px 18px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+header.top h1{margin:0;font-size:18px}
+.card{background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:16px;margin:14px 0}
+.btn{font:inherit;font-size:13px;font-weight:700;border:none;border-radius:10px;padding:9px 13px;cursor:pointer}
+.btn.brand{background:var(--brand);color:#fff}.btn.soft{background:#eef2f7;color:var(--ink)}.btn.ghost{background:#fff;color:var(--brand);border:1.5px solid var(--line)}
+.btn.sm{font-size:12px;padding:6px 10px}
+.btn:active{transform:translateY(1px)}
+input,select,textarea{font:inherit;font-size:14px;background:#f8fafc;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);background:#fff}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.controls label{font-size:12px;color:var(--muted);font-weight:700;display:flex;flex-direction:column;gap:4px}
+.controls .chk{flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--ink);padding-bottom:9px}
+h2{font-size:15px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:center}
+th{background:#f1f5f9;position:sticky;top:0;z-index:2}
+td.l,th.l{text-align:left}
+.pill{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:#ede9fe;color:var(--brand)}
+.warn{color:var(--fail);font-weight:800}
+.good{color:var(--done);font-weight:800}
+.del{background:none;border:none;color:var(--fail);cursor:pointer;font-weight:700;font-size:12px}
+.view{background:none;border:1.5px solid var(--line);color:var(--brand);border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;padding:3px 8px;margin-right:4px}
+.tablewrap{overflow:auto;max-height:62vh;border-radius:10px;border:1px solid var(--line)}
+.note{font-size:12px;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:26px;font-size:13px}
+#login{max-width:360px;margin:60px auto}
+#login .card{text-align:center}
+#login input{width:100%;margin:10px 0;text-align:center}
+.modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:80;overflow:auto;padding:24px 12px}
+.modal.show{display:block}
+.modalbox{max-width:780px;margin:0 auto;background:#fff;border-radius:14px;padding:20px;position:relative;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.modalclose{position:absolute;top:8px;right:12px;border:none;background:none;font-size:26px;cursor:pointer;color:var(--muted);line-height:1}
+.dsec{margin:14px 0}
+.dsec h3{font-size:14px;margin:0 0 6px;color:var(--brand);border-bottom:2px solid var(--line);padding-bottom:4px}
+.dmeta{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-bottom:6px}
+.dmeta b{color:var(--brand2)}
+.dcard{border:1.5px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;font-size:13px;text-align:left}
+.dcard.esc{border-color:var(--fail);background:#fff5f5}
+.dcard .t{font-weight:800;color:var(--brand)}
+.dcard .sub{font-size:12px;color:var(--muted);margin-top:3px}
+.dempty{color:var(--muted);font-size:13px;padding:6px}
+.badge{display:inline-block;font-size:11px;font-weight:800;border-radius:999px;padding:2px 8px;margin-left:6px}
+.badge.esc{background:var(--failBg);color:var(--fail)}
+.badge.st0{background:var(--doneBg);color:var(--done)}
+.badge.st1{background:var(--partialBg);color:var(--partial)}
+.badge.st2{background:var(--failBg);color:var(--fail)}
+.badge.carried{background:#e0e7ff;color:#4f46e5}
+/* template editor */
+.tf{border:1.5px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:#f8fafc}
+.tf .head{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.tf .type{font-size:11px;font-weight:800;background:#ede9fe;color:var(--brand);border-radius:999px;padding:2px 9px}
+.tf .mv{border:1.5px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;font-size:13px;padding:2px 8px}
+.tf input[type=text],.tf textarea{width:100%;margin:3px 0;font-size:13px;padding:7px 9px}
+.tf .lbl{font-size:11px;color:var(--muted);font-weight:700;margin-top:6px}
+.tf .rm{margin-left:auto;background:none;border:none;color:var(--fail);font-weight:700;cursor:pointer;font-size:12px}
+.tf .chkrow{display:flex;gap:14px;margin-top:6px;font-size:12.5px;font-weight:600}
+.tf .chkrow label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#1e293b;color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;z-index:99;pointer-events:none}
+.toast.show{opacity:1}.toast.err{background:#b91c1c}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>主管彙整後台 · 客服日回報</h1>
+  <div id="topbtns" style="display:none">
+    <button class="btn soft sm" id="tplBtn">📝 編輯回報表內容</button>
+    <button class="btn soft sm" id="csvBtn">⬇ 匯出CSV</button>
+    <button class="btn ghost sm" id="logoutBtn" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">登出</button>
+  </div>
+</header>
+
+<div id="login" style="display:none">
+  <div class="card">
+    <h2>主管登入</h2>
+    <input type="password" id="pw" placeholder="請輸入後台密碼">
+    <button class="btn brand" id="loginBtn" style="width:100%">登入</button>
+    <p class="note" id="loginMsg"></p>
+  </div>
+</div>
+
+<div class="wrap" id="main" style="display:none">
+  <div class="card">
+    <div class="controls">
+      <label>月份 <input type="month" id="month"></label>
+      <label>班別 <select id="posSel"><option value="">全部</option></select></label>
+      <label class="chk"><input type="checkbox" id="escOnly"> 只看「需主管介入」</label>
+      <button class="btn brand sm" id="reloadBtn">查詢</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 月度彙總（每人）</h2>
+    <div class="tablewrap"><table id="sumTbl"></table></div>
+    <p class="note">疑難＝疑難案件件數；有效＝3次內有效回應件數；互助＝互助事蹟件數（對接考核軸二）；交辦完成率＝完成÷總交辦；需介入＝勾選「需主管介入」次數；追蹤未結＝最新一日仍持續追蹤件數。</p>
+  </div>
+
+  <div class="card">
+    <h2>📋 每日回報明細</h2>
+    <div class="tablewrap"><table id="dayTbl"></table></div>
+  </div>
+</div>
+
+<!-- 詳情 modal -->
+<div class="modal" id="detailModal"><div class="modalbox">
+  <button class="modalclose" onclick="document.getElementById('detailModal').classList.remove('show')">×</button>
+  <div id="detailBody"></div>
+</div></div>
+
+<!-- 範本編輯 modal -->
+<div class="modal" id="tplModal"><div class="modalbox">
+  <button class="modalclose" onclick="document.getElementById('tplModal').classList.remove('show')">×</button>
+  <h2>📝 編輯回報表內容</h2>
+  <p class="note">改標題、班別、各區塊文字與選項；儲存後填寫頁立即生效，舊回報不受影響。</p>
+  <div class="lbl" style="font-size:11px;color:var(--muted);font-weight:700">表單標題</div>
+  <input type="text" id="tplTitle" style="width:100%;margin:3px 0">
+  <div class="lbl" style="font-size:11px;color:var(--muted);font-weight:700;margin-top:6px">班別（逗號分隔）</div>
+  <input type="text" id="tplShifts" style="width:100%;margin:3px 0">
+  <div id="tplFields"></div>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+    <select id="newType">
+      <option value="caselist">案件清單（平台＋內容，可重複新增）</option>
+      <option value="helplist">互助清單（誰協助誰＋內容）</option>
+      <option value="task_status">交辦清單（內容＋完成狀態）</option>
+      <option value="tracklist">追蹤清單（內容＋進度＋狀態）</option>
+      <option value="select_text">下拉＋備註</option>
+      <option value="text">純文字</option>
+    </select>
+    <button class="btn ghost sm" id="addFieldBtn">＋ 新增區塊</button>
+    <button class="btn brand" id="saveTplBtn" style="margin-left:auto">儲存範本</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var TPL=null, SUBS=[], SUMMARY=[];
+function $(id){return document.getElementById(id);}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function toast(msg,isErr){var t=$('toast');t.textContent=msg;t.className='toast show'+(isErr?' err':'');clearTimeout(t._t);t._t=setTimeout(function(){t.className='toast';},2600);}
+function api(p,opt){return fetch(p,opt).then(function(r){return r.json().then(function(j){return {status:r.status,j:j};});});}
+
+/* ---------- auth ---------- */
+function boot(){
+  api('/api/admin/check').then(function(o){
+    if(o.j&&o.j.isAdmin){showMain();}else{$('login').style.display='block';}
+  });
+}
+$('loginBtn').onclick=doLogin;
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+function doLogin(){
+  api('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})})
+    .then(function(o){ if(o.status===200){$('login').style.display='none';showMain();} else $('loginMsg').textContent=o.j.error||'登入失敗'; });
+}
+$('logoutBtn').onclick=function(){ api('/api/admin/logout',{method:'POST'}).then(function(){location.reload();}); };
+
+function showMain(){
+  $('main').style.display='block'; $('topbtns').style.display='flex';
+  var d=new Date(); $('month').value=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);
+  fetch('/api/template').then(function(r){return r.json();}).then(function(t){
+    TPL=t;
+    var sel=$('posSel');
+    (t.shifts||[]).forEach(function(s){var o=el('option',null,s);o.value=s;sel.appendChild(o);});
+    load();
+  });
+}
+$('reloadBtn').onclick=load;
+$('escOnly').onchange=renderDay;
+$('csvBtn').onclick=function(){ location.href='/api/admin/export?month='+encodeURIComponent($('month').value||''); };
+
+/* ---------- data ---------- */
+function load(){
+  api('/api/admin/data?month='+encodeURIComponent($('month').value||'')+'&pos='+encodeURIComponent($('posSel').value||''))
+    .then(function(o){
+      if(o.status!==200){toast(o.j.error||'讀取失敗',true);return;}
+      SUBS=o.j.submissions||[]; SUMMARY=o.j.summary||[];
+      renderSum(); renderDay();
+    });
+}
+function fieldsByType(type,pred){
+  return (TPL.fields||[]).filter(function(f){return f.type===type&&(!pred||pred(f));}).map(function(f){return f.id;});
+}
+function cnt(counts,ids){var n=0;(ids||[]).forEach(function(id){n+=Number((counts||{})[id])||0;});return n;}
+
+function renderSum(){
+  var hardIds=fieldsByType('caselist',function(f){return f.escalate;});
+  var resIds=fieldsByType('caselist',function(f){return !f.escalate;});
+  var helpIds=fieldsByType('helplist');
+  var t=$('sumTbl');
+  var h='<tr><th class="l">姓名</th><th>班別</th><th>回報天數</th><th>疑難</th><th>有效回應</th><th>互助</th><th>交辦完成率</th><th>需介入</th><th>追蹤未結</th></tr>';
+  if(!SUMMARY.length){t.innerHTML=h+'<tr><td colspan="9" class="empty">本月尚無回報</td></tr>';return;}
+  SUMMARY.forEach(function(G){
+    h+='<tr><td class="l"><b>'+esc(G.name)+'</b></td><td><span class="pill">'+esc(G.pos)+'</span></td><td>'+G.days+'</td>'
+      +'<td>'+cnt(G.counts,hardIds)+'</td><td>'+cnt(G.counts,resIds)+'</td><td class="good">'+cnt(G.counts,helpIds)+'</td>'
+      +'<td>'+(G.taskRate==null?'—':'<b class="'+(G.taskRate>=80?'good':(G.taskRate<50?'warn':''))+'">'+G.taskRate+'%</b> <span class="note">('+G.tasksDone+'/'+G.tasks+')</span>')+'</td>'
+      +'<td>'+(G.escal?'<span class="warn">'+G.escal+'</span>':'0')+'</td>'
+      +'<td>'+(G.trackOpen?'<span class="warn">'+G.trackOpen+'</span>':'0')+'</td></tr>';
+  });
+  t.innerHTML=h;
+}
+
+function renderDay(){
+  var hardIds=fieldsByType('caselist',function(f){return f.escalate;});
+  var resIds=fieldsByType('caselist',function(f){return !f.escalate;});
+  var helpIds=fieldsByType('helplist');
+  var t=$('dayTbl');
+  var h='<tr><th>日期</th><th>班別</th><th class="l">姓名</th><th>疑難</th><th>需介入</th><th>有效</th><th>互助</th><th>交辦</th><th>追蹤未結</th><th>操作</th></tr>';
+  var list=SUBS;
+  if($('escOnly').checked) list=list.filter(function(s){return (s.metrics||{}).escal>0;});
+  if(!list.length){t.innerHTML=h+'<tr><td colspan="10" class="empty">'+($('escOnly').checked?'沒有需主管介入的回報':'尚無回報')+'</td></tr>';return;}
+  list.forEach(function(s){
+    var m=s.metrics||{};
+    h+='<tr><td>'+esc(s.date)+'</td><td><span class="pill">'+esc(s.pos)+'</span></td><td class="l"><b>'+esc(s.name)+'</b></td>'
+      +'<td>'+cnt(m.counts,hardIds)+'</td>'
+      +'<td>'+(m.escal?'<span class="warn">⚠'+m.escal+'</span>':'—')+'</td>'
+      +'<td>'+cnt(m.counts,resIds)+'</td><td>'+cnt(m.counts,helpIds)+'</td>'
+      +'<td>'+(m.tasks?(m.tasksDone+'/'+m.tasks):'—')+'</td>'
+      +'<td>'+(m.trackOpen?('<span class="warn">'+m.trackOpen+'</span>'):'0')+'</td>'
+      +'<td><button class="view" onclick="showDetail(\''+s.id+'\')">詳情</button><button class="del" onclick="delSub(\''+s.id+'\',\''+esc(s.name)+'\',\''+esc(s.date)+'\')">刪除</button></td></tr>';
+  });
+  t.innerHTML=h;
+}
+
+function delSub(id,name,date){
+  if(!confirm('確定刪除 '+name+'（'+date+'）的回報？刪除後該同事可重新填寫。'))return;
+  api('/api/admin/submission?id='+encodeURIComponent(id),{method:'DELETE'}).then(function(o){
+    if(o.status===200){toast('已刪除');load();}else toast(o.j.error||'刪除失敗',true);
+  });
+}
+
+/* ---------- detail ---------- */
+function showDetail(id){
+  var s=SUBS.filter(function(x){return x.id===id;})[0]; if(!s)return;
+  var b=$('detailBody');
+  var html='<h2>'+esc(s.date)+'　'+esc(s.name)+'　<span class="pill">'+esc(s.pos)+'</span></h2>'
+    +'<div class="dmeta"><span>送出時間：<b>'+esc((s.receivedAt||'').replace('T',' ').slice(0,19))+'</b></span></div>';
+  (TPL.fields||[]).forEach(function(f){
+    var v=(s.fields||{})[f.id];
+    html+='<div class="dsec"><h3>'+esc(f.label)+'</h3>'+renderVal(f,v)+'</div>';
+  });
+  b.innerHTML=html;
+  $('detailModal').classList.add('show');
+}
+function stBadge(f,st){
+  var opts=f.statusOptions||[]; var i=opts.indexOf(st);
+  return st?'<span class="badge st'+(i<0?1:i)+'">'+esc(st)+'</span>':'';
+}
+function renderVal(f,v){
+  if(f.type==='text'){ return v?'<div class="dcard">'+esc(v).replace(/\n/g,'<br>')+'</div>':'<div class="dempty">（無）</div>'; }
+  if(f.type==='select_text'){
+    v=v||{};
+    if(!v.option&&!v.text)return '<div class="dempty">（無）</div>';
+    return '<div class="dcard"><span class="t">'+esc(v.option||'未選擇')+'</span>'+(v.text?'<div class="sub">'+esc(v.text).replace(/\n/g,'<br>')+'</div>':'')+'</div>';
+  }
+  var arr=Array.isArray(v)?v:[];
+  if(!arr.length)return '<div class="dempty">（無）</div>';
+  var out='';
+  arr.forEach(function(x,i){
+    if(f.type==='caselist'){
+      out+='<div class="dcard'+(x.escalate?' esc':'')+'"><span class="t">#'+(i+1)+' ['+esc(x.platform||'?')+']</span>'
+        +(x.customer?' 【'+esc(x.customer)+'】':'')+(x.reason?' <span class="badge st1">'+esc(x.reason)+'</span>':'')
+        +(x.escalate?'<span class="badge esc">⚠需主管介入</span>':'')
+        +'<div class="sub">'+esc(x.text).replace(/\n/g,'<br>')+'</div></div>';
+    } else if(f.type==='helplist'){
+      out+='<div class="dcard"><span class="t">#'+(i+1)+' '+esc(x.helper||'?')+' → '+esc(x.helpee||'?')+'</span><div class="sub">'+esc(x.text).replace(/\n/g,'<br>')+'</div></div>';
+    } else if(f.type==='task_status'){
+      out+='<div class="dcard"><span class="t">#'+(i+1)+'</span> '+esc(x.text)+stBadge(f,x.status)
+        +(x.reason?'<div class="sub">原因/預計：'+esc(x.reason)+'</div>':'')+'</div>';
+    } else if(f.type==='tracklist'){
+      out+='<div class="dcard"><span class="t">#'+(i+1)+'</span> '+esc(x.text)+stBadge(f,x.status)+(x.carried?'<span class="badge carried">昨日帶入</span>':'')
+        +(x.progress?'<div class="sub">進度：'+esc(x.progress).replace(/\n/g,'<br>')+'</div>':'')+'</div>';
+    }
+  });
+  return out;
+}
+
+/* ---------- template editor ---------- */
+var EDIT=null;
+$('tplBtn').onclick=function(){
+  EDIT=JSON.parse(JSON.stringify(TPL));
+  $('tplTitle').value=EDIT.title||'';
+  $('tplShifts').value=(EDIT.shifts||[]).join('，');
+  renderTplFields();
+  $('tplModal').classList.add('show');
+};
+function renderTplFields(){
+  var box=$('tplFields'); box.innerHTML='';
+  (EDIT.fields||[]).forEach(function(f,i){
+    var d=el('div','tf');
+    var head=el('div','head');
+    var typeNames={caselist:'案件清單',helplist:'互助清單',task_status:'交辦清單',tracklist:'追蹤清單',select_text:'下拉＋備註',text:'純文字'};
+    head.appendChild(el('span','type',typeNames[f.type]||f.type));
+    var up=el('button','mv','↑');up.onclick=function(){if(i>0){EDIT.fields.splice(i-1,0,EDIT.fields.splice(i,1)[0]);renderTplFields();}};
+    var dn=el('button','mv','↓');dn.onclick=function(){if(i<EDIT.fields.length-1){EDIT.fields.splice(i+1,0,EDIT.fields.splice(i,1)[0]);renderTplFields();}};
+    head.appendChild(up);head.appendChild(dn);
+    var rm=el('button','rm','移除');rm.onclick=function(){if(confirm('移除「'+f.label+'」？舊回報資料不受影響。')){EDIT.fields.splice(i,1);renderTplFields();}};
+    head.appendChild(rm);
+    d.appendChild(head);
+    d.appendChild(el('div','lbl','區塊標題'));
+    var li=el('input');li.type='text';li.value=f.label||'';li.oninput=function(){f.label=li.value;};d.appendChild(li);
+    d.appendChild(el('div','lbl','說明文字'));
+    var hi=el('input');hi.type='text';hi.value=f.hint||'';hi.oninput=function(){f.hint=hi.value;};d.appendChild(hi);
+    function optRow(key,label){
+      if(!(key in f)&&!(key==='platformOptions'&&f.type==='caselist')&&!(key==='options'&&f.type==='select_text')&&!(key==='statusOptions'&&(f.type==='task_status'||f.type==='tracklist')))return;
+      d.appendChild(el('div','lbl',label+'（逗號分隔）'));
+      var oi=el('input');oi.type='text';oi.value=(f[key]||[]).join('，');
+      oi.oninput=function(){f[key]=oi.value.split(/[，,]/).map(function(s){return s.trim();}).filter(Boolean);};
+      d.appendChild(oi);
+    }
+    if(f.type==='caselist'){optRow('platformOptions','平台選項');if(f.reasonOptions)optRow('reasonOptions','卡關原因選項');}
+    if(f.type==='select_text')optRow('options','下拉選項');
+    if(f.type==='task_status'||f.type==='tracklist')optRow('statusOptions','狀態選項');
+    if(f.type==='caselist'){
+      var cr=el('div','chkrow');
+      [['customer','客戶識別欄'],['escalate','需主管介入勾選'],['reasonOptions','卡關原因分類']].forEach(function(p){
+        var lb=el('label');var cb=el('input');cb.type='checkbox';
+        cb.checked=p[0]==='reasonOptions'?Array.isArray(f.reasonOptions):!!f[p[0]];
+        cb.onchange=function(){
+          if(p[0]==='reasonOptions'){ if(cb.checked)f.reasonOptions=f.reasonOptions||['其他']; else delete f.reasonOptions; renderTplFields(); }
+          else f[p[0]]=cb.checked;
+        };
+        lb.appendChild(cb);lb.appendChild(document.createTextNode(p[1]));cr.appendChild(lb);
+      });
+      d.appendChild(cr);
+    }
+    if(f.type==='tracklist'){
+      var cr2=el('div','chkrow');var lb2=el('label');var cb2=el('input');cb2.type='checkbox';cb2.checked=!!f.carryover;
+      cb2.onchange=function(){f.carryover=cb2.checked;};
+      lb2.appendChild(cb2);lb2.appendChild(document.createTextNode('跨日自動帶入未結案件'));cr2.appendChild(lb2);d.appendChild(cr2);
+    }
+    box.appendChild(d);
+  });
+}
+$('addFieldBtn').onclick=function(){
+  var type=$('newType').value;
+  var f={id:'f'+Date.now().toString(36),type:type,label:'新區塊',hint:''};
+  if(type==='caselist'){f.platformOptions=['LINE','FB'];}
+  if(type==='select_text'){f.options=[];}
+  if(type==='task_status'){f.statusOptions=['完成','部分完成','未完成'];}
+  if(type==='tracklist'){f.statusOptions=['持續追蹤','已結案'];f.carryover=true;}
+  EDIT.fields.push(f); renderTplFields();
+};
+$('saveTplBtn').onclick=function(){
+  EDIT.title=$('tplTitle').value.trim()||'客服日回報表';
+  EDIT.shifts=$('tplShifts').value.split(/[，,]/).map(function(s){return s.trim();}).filter(Boolean);
+  if(!EDIT.shifts.length)EDIT.shifts=['早班','晚班'];
+  api('/api/admin/template',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(EDIT)})
+    .then(function(o){
+      if(o.status===200){TPL=EDIT;toast('已儲存，填寫頁立即生效');$('tplModal').classList.remove('show');load();}
+      else toast(o.j.error||'儲存失敗',true);
+    });
+};
+
+boot();
+</script>
+</body>
+</html>

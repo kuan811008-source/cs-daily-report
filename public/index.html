@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>客服日回報表</title>
+<style>
+:root{
+  --panel:#ffffff; --ink:#1e293b; --muted:#64748b; --line:#e2e8f0;
+  --brand:#7c3aed; --brand2:#4f46e5; --accent:#8b5cf6;
+  --done:#16a34a; --doneBg:#dcfce7; --partial:#d97706; --partialBg:#fef3c7;
+  --fail:#dc2626; --failBg:#fee2e2;
+  --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.06);
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:"Segoe UI","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;background:#f1f5f9;color:var(--ink);line-height:1.5;-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding:0 14px 130px}
+header.top{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;padding:18px 16px;border-radius:0 0 18px 18px;box-shadow:var(--shadow)}
+header.top h1{margin:0;font-size:20px;letter-spacing:.5px}
+header.top p{margin:4px 0 0;font-size:12.5px;opacity:.9}
+.card{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:14px 0}
+.card>h2{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card>.hint{font-size:12px;color:var(--muted);margin:0 0 12px}
+.grid{display:grid;gap:12px}
+.grid.meta{grid-template-columns:1fr 1fr}
+label.fld,div.fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);font-weight:600}
+input[type=text],input[type=date],textarea,select{
+  font:inherit;font-size:14px;color:var(--ink);background:#f8fafc;border:1.5px solid var(--line);
+  border-radius:10px;padding:9px 11px;width:100%;transition:border-color .15s}
+textarea{resize:vertical;min-height:58px}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);background:#fff}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:inherit;font-size:13px;font-weight:600;border:1.5px solid var(--line);background:#fff;color:var(--muted);
+  border-radius:999px;padding:7px 13px;cursor:pointer;transition:.12s;flex:0 0 auto}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:var(--shadow)}
+
+.btn{font:inherit;font-size:13px;font-weight:700;border:none;border-radius:10px;padding:9px 13px;cursor:pointer;transition:.12s;display:inline-flex;align-items:center;gap:6px}
+.btn.brand{background:var(--brand);color:#fff}
+.btn.soft{background:#eef2f7;color:var(--ink)}
+.btn.ghost{background:#fff;color:var(--brand);border:1.5px solid var(--line)}
+.btn.sm{font-size:12px;padding:6px 10px}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.tagplus{font-size:11px;font-weight:800;color:var(--brand);background:#ede9fe;border-radius:999px;padding:2px 9px}
+.rows{display:flex;flex-direction:column;gap:10px}
+.row{border:1.5px solid var(--line);border-radius:12px;padding:11px;background:#f8fafc;position:relative}
+.row.carried{border-color:#a5b4fc;background:#eef2ff}
+.row .rowhead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.row .idx{font-size:11px;font-weight:800;color:var(--brand);background:#ede9fe;border-radius:999px;padding:2px 9px}
+.row .ctag{font-size:11px;font-weight:800;color:#4f46e5;background:#e0e7ff;border-radius:999px;padding:2px 9px}
+.row .del{margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px}
+.row .del:hover{color:var(--fail);background:var(--failBg)}
+.subgrid{display:grid;gap:8px;margin-bottom:8px}
+@media(min-width:560px){.subgrid.two{grid-template-columns:1fr 1fr}}
+.plat{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.plat select{width:auto;min-width:110px;flex:1}
+.addopt{font-size:12px;color:var(--brand);background:none;border:none;cursor:pointer;font-weight:700;padding:4px;flex:0 0 auto}
+.sublabel{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;user-select:none;margin-top:8px}
+.chk input{width:17px;height:17px;accent-color:var(--fail)}
+.chk.on{color:var(--fail)}
+.statebtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.statebtns button{font:inherit;font-size:12.5px;font-weight:700;border:1.5px solid var(--line);background:#fff;color:var(--muted);
+  border-radius:9px;padding:6px 11px;cursor:pointer;transition:.12s}
+.statebtns button.s0.on{background:var(--doneBg);border-color:var(--done);color:var(--done)}
+.statebtns button.s1.on{background:var(--partialBg);border-color:var(--partial);color:var(--partial)}
+.statebtns button.s2.on{background:var(--failBg);border-color:var(--fail);color:var(--fail)}
+.reasonbox{margin-top:8px}
+.addbtn{align-self:flex-start;margin-top:2px}
+.pullbtn{margin-left:6px}
+.empty{font-size:12.5px;color:var(--muted);padding:6px 2px}
+
+.footer{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);
+  border-top:1px solid var(--line);padding:10px 14px;box-shadow:0 -4px 14px rgba(15,23,42,.08);z-index:40}
+.footer .inner{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.footer .stat{font-size:12px;color:var(--muted);font-weight:600;margin-right:auto}
+.footer .stat b{color:var(--brand);font-size:15px}
+.toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#1e293b;color:#fff;padding:11px 18px;
+  border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;transition:.25s;z-index:60;pointer-events:none;max-width:88vw;text-align:center}
+.toast.show{opacity:1}
+.toast.err{background:#b91c1c}
+.locked{background:var(--doneBg);border:1.5px solid var(--done);color:#166534;border-radius:12px;padding:16px;font-size:14px;font-weight:600;text-align:center;margin:14px 0}
+a.adminlink{display:inline-block;margin-top:10px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1 id="title">客服日回報表</h1>
+  <p>送出後即鎖定，如需修改請聯繫主管。標「＋可新增」的區塊可不斷新增。</p>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <div class="grid meta">
+      <div class="fld">班別
+        <div class="seg" id="shiftSeg"></div>
+      </div>
+      <label class="fld">日期
+        <input type="date" id="date">
+      </label>
+    </div>
+    <label class="fld" style="margin-top:12px">姓名
+      <input type="text" id="name" placeholder="請輸入你的姓名" autocomplete="name">
+    </label>
+  </div>
+
+  <div id="formArea"></div>
+
+  <a class="adminlink" href="admin.html">主管後台 →</a>
+</div>
+
+<div class="footer">
+  <div class="inner">
+    <div class="stat">疑難 <b id="cHard">0</b>　互助 <b id="cHelp">0</b>　交辦 <b id="cTask">0</b>　追蹤 <b id="cTrack">0</b></div>
+    <button class="btn soft sm" id="copyBtn">複製摘要</button>
+    <button class="btn brand" id="submitBtn">送出回報</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DATA = null;
+var STATE = {}; // fieldId -> value
+var LOCKED = false;
+var LS_KEY = 'csDailyReportDraft';
+
+function $(id){return document.getElementById(id);}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+function toast(msg,isErr){var t=$('toast');t.textContent=msg;t.className='toast show'+(isErr?' err':'');clearTimeout(t._t);t._t=setTimeout(function(){t.className='toast';},3000);}
+
+/* ---------- load template ---------- */
+function loadTpl(tries){
+  fetch('/api/template').then(function(r){return r.json();}).then(function(t){
+    if(!t||!t.fields||!t.fields.length){ if(tries>0){setTimeout(function(){loadTpl(tries-1);},400);return;} t={title:'客服日回報表',shifts:['早班','晚班'],fields:[]}; }
+    DATA=t; init();
+  }).catch(function(){ if(tries>0){setTimeout(function(){loadTpl(tries-1);},400);} });
+}
+
+function init(){
+  $('title').textContent = DATA.title || '客服日回報表';
+  document.title = DATA.title || '客服日回報表';
+  var seg=$('shiftSeg'); seg.innerHTML='';
+  (DATA.shifts||['早班','晚班']).forEach(function(s,i){
+    var b=el('button',null,s); b.type='button';
+    b.onclick=function(){ [].forEach.call(seg.children,function(x){x.classList.remove('on');}); b.classList.add('on'); STATE._shift=s; save(); };
+    if(i===0){b.classList.add('on');STATE._shift=s;}
+    seg.appendChild(b);
+  });
+  var d=new Date(); var tz=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+  $('date').value = tz.toISOString().slice(0,10);
+
+  restore();
+  buildForm();
+  pullCarryover(false);
+  recount();
+}
+
+/* ---------- build form ---------- */
+function buildForm(){
+  var area=$('formArea'); area.innerHTML='';
+  DATA.fields.forEach(function(f){
+    var card=el('div','card');
+    var h=el('h2'); h.appendChild(el('span',null,f.label));
+    if(['caselist','helplist','tracklist','task_status'].indexOf(f.type)>=0){ h.appendChild(el('span','tagplus','＋可新增')); }
+    if(f.type==='tracklist'&&f.carryover){
+      var pull=el('button','btn ghost sm pullbtn','⟳ 帶入未結案件'); pull.type='button';
+      pull.onclick=function(){pullCarryover(true);};
+      h.appendChild(pull);
+    }
+    card.appendChild(h);
+    if(f.hint) card.appendChild(el('p','hint',f.hint));
+    var body=el('div'); body.id='f_'+f.id; card.appendChild(body);
+    area.appendChild(card);
+    renderField(f, body);
+  });
+}
+
+function renderField(f, body){
+  body.innerHTML='';
+  if(f.type==='text'){
+    var ta=el('textarea'); ta.placeholder='輸入文字…'; ta.value=STATE[f.id]||'';
+    ta.oninput=function(){STATE[f.id]=ta.value;save();};
+    body.appendChild(ta); return;
+  }
+  if(f.type==='select_text'){
+    var v=STATE[f.id]; if(!v||typeof v!=='object'){v={option:'',text:''};STATE[f.id]=v;}
+    var plat=el('div','plat');
+    plat.appendChild(makeSelect(f.options||[], v.option, function(val){v.option=val;save();}));
+    plat.appendChild(makeAddOpt(f,'options',function(){renderField(f,body);}));
+    body.appendChild(plat);
+    var ta=el('textarea'); ta.placeholder='備註（未完事項、注意點）…'; ta.value=v.text||''; ta.style.marginTop='8px';
+    ta.oninput=function(){v.text=ta.value;save();};
+    body.appendChild(ta); return;
+  }
+  // repeatable types
+  var arr=STATE[f.id]; if(!Array.isArray(arr)){arr=[];STATE[f.id]=arr;}
+  var rows=el('div','rows'); body.appendChild(rows);
+  function redraw(){
+    rows.innerHTML='';
+    if(!arr.length){rows.appendChild(el('div','empty','（尚無項目，點下方按鈕新增）'));}
+    arr.forEach(function(item,i){rows.appendChild(rowFor(f,item,i,arr,redraw));});
+    recount();
+  }
+  body._redraw=redraw;
+  var add=el('button','btn ghost sm addbtn'); add.type='button';
+  add.textContent = f.type==='caselist'?'＋ 新增案件':(f.type==='tracklist'?'＋ 新增追蹤件':'＋ 新增一筆');
+  add.onclick=function(){
+    if(f.type==='caselist') arr.push({platform:'',customer:'',reason:'',text:'',escalate:false});
+    else if(f.type==='helplist') arr.push({helper:'',helpee:'',text:''});
+    else if(f.type==='task_status') arr.push({text:'',status:'',reason:''});
+    else if(f.type==='tracklist') arr.push({text:'',progress:'',status:(f.statusOptions||[])[0]||'持續追蹤',carried:false});
+    save(); redraw();
+  };
+  body.appendChild(add);
+  redraw();
+}
+
+function rowFor(f,item,i,arr,redraw){
+  var row=el('div','row'+(item.carried?' carried':''));
+  var head=el('div','rowhead');
+  head.appendChild(el('span','idx','#'+(i+1)));
+  if(item.carried) head.appendChild(el('span','ctag','昨日帶入'));
+  var del=el('button','del','×'); del.type='button'; del.title='刪除';
+  del.onclick=function(){arr.splice(i,1);save();redraw();};
+  head.appendChild(del);
+  row.appendChild(head);
+
+  if(f.type==='caselist'){
+    var plat=el('div','plat');
+    plat.appendChild(makeSelect(f.platformOptions||[], item.platform, function(v){item.platform=v;save();}, '— 平台 —'));
+    plat.appendChild(makeAddOpt(f,'platformOptions',redraw));
+    row.appendChild(plat);
+    if(f.customer){
+      var cwrap=el('div','reasonbox');
+      cwrap.appendChild(el('div','sublabel','客戶識別（暱稱／訂單號）'));
+      var ci=el('input'); ci.type='text'; ci.placeholder='例：LINE暱稱小美 / 訂單#12345'; ci.value=item.customer||'';
+      ci.oninput=function(){item.customer=ci.value;save();};
+      cwrap.appendChild(ci); row.appendChild(cwrap);
+    }
+    if(f.reasonOptions){
+      var rwrap=el('div','reasonbox');
+      rwrap.appendChild(el('div','sublabel','卡關原因'));
+      var rplat=el('div','plat');
+      rplat.appendChild(makeSelect(f.reasonOptions||[], item.reason, function(v){item.reason=v;save();}, '— 卡關原因 —'));
+      rplat.appendChild(makeAddOpt(f,'reasonOptions',redraw));
+      rwrap.appendChild(rplat); row.appendChild(rwrap);
+    }
+    var ta=el('textarea'); ta.placeholder='案件內容／處理經過…'; ta.value=item.text||''; ta.style.marginTop='8px';
+    ta.oninput=function(){item.text=ta.value;save();recount();};
+    row.appendChild(ta);
+    if(f.escalate){
+      var lb=el('label','chk'+(item.escalate?' on':''));
+      var cb=el('input'); cb.type='checkbox'; cb.checked=!!item.escalate;
+      cb.onchange=function(){item.escalate=cb.checked;lb.classList.toggle('on',cb.checked);save();recount();};
+      lb.appendChild(cb); lb.appendChild(document.createTextNode('需主管介入'));
+      row.appendChild(lb);
+    }
+  } else if(f.type==='helplist'){
+    var g=el('div','subgrid two');
+    var w1=el('div'); w1.appendChild(el('div','sublabel','協助人'));
+    var h1=el('input'); h1.type='text'; h1.placeholder='誰提供協助'; h1.value=item.helper||'';
+    h1.oninput=function(){item.helper=h1.value;save();};
+    w1.appendChild(h1); g.appendChild(w1);
+    var w2=el('div'); w2.appendChild(el('div','sublabel','被協助人'));
+    var h2=el('input'); h2.type='text'; h2.placeholder='誰接受協助'; h2.value=item.helpee||'';
+    h2.oninput=function(){item.helpee=h2.value;save();};
+    w2.appendChild(h2); g.appendChild(w2);
+    row.appendChild(g);
+    var ta2=el('textarea'); ta2.placeholder='具體事蹟內容…'; ta2.value=item.text||'';
+    ta2.oninput=function(){item.text=ta2.value;save();recount();};
+    row.appendChild(ta2);
+  } else if(f.type==='task_status'){
+    var ta3=el('textarea'); ta3.placeholder='交辦事項內容…'; ta3.value=item.text||'';
+    ta3.oninput=function(){item.text=ta3.value;save();recount();};
+    row.appendChild(ta3);
+    var opts=f.statusOptions||['完成','部分完成','未完成'];
+    var sb=el('div','statebtns');
+    var rbox=el('div','reasonbox'); // 非完成時顯示
+    function syncReason(){
+      rbox.innerHTML='';
+      if(item.status && item.status!==opts[0]){
+        rbox.appendChild(el('div','sublabel','原因＆預計完成時間（必填）'));
+        var ri=el('input'); ri.type='text'; ri.placeholder='例：等廠商報價，預計明天中午前完成'; ri.value=item.reason||'';
+        ri.oninput=function(){item.reason=ri.value;save();};
+        rbox.appendChild(ri);
+      } else { item.reason=''; }
+    }
+    opts.forEach(function(st,si){
+      var b=el('button','s'+si,st); b.type='button';
+      if(item.status===st)b.classList.add('on');
+      b.onclick=function(){ item.status=(item.status===st?'':st); [].forEach.call(sb.children,function(x){x.classList.remove('on');}); if(item.status)b.classList.add('on'); syncReason(); save(); recount(); };
+      sb.appendChild(b);
+    });
+    row.appendChild(sb); row.appendChild(rbox); syncReason();
+  } else if(f.type==='tracklist'){
+    var ta4=el('textarea'); ta4.placeholder='問題件內容…'; ta4.value=item.text||'';
+    if(item.carried){ ta4.readOnly=true; ta4.style.background='#eef2ff'; }
+    ta4.oninput=function(){item.text=ta4.value;save();recount();};
+    row.appendChild(ta4);
+    if(item.carried&&item.prevProgress){
+      var pv=el('div','sublabel'); pv.style.marginTop='6px'; pv.textContent='昨日進度：'+item.prevProgress;
+      row.appendChild(pv);
+    }
+    var pwrap=el('div','reasonbox');
+    pwrap.appendChild(el('div','sublabel','今日進度'));
+    var pi=el('textarea'); pi.placeholder='今天做了什麼／目前卡在哪…'; pi.value=item.progress||''; pi.style.minHeight='44px';
+    pi.oninput=function(){item.progress=pi.value;save();};
+    pwrap.appendChild(pi); row.appendChild(pwrap);
+    var topts=f.statusOptions||['持續追蹤','已結案'];
+    var sb2=el('div','statebtns');
+    topts.forEach(function(st,si){
+      var b=el('button','s'+(si===0?'1':'0'),st); b.type='button'; // 持續追蹤=橘、已結案=綠
+      if(item.status===st)b.classList.add('on');
+      b.onclick=function(){ item.status=st; [].forEach.call(sb2.children,function(x){x.classList.remove('on');}); b.classList.add('on'); save(); recount(); };
+      sb2.appendChild(b);
+    });
+    row.appendChild(sb2);
+  }
+  return row;
+}
+
+function makeSelect(opts, cur, onch, phText){
+  var sel=el('select');
+  var ph=el('option'); ph.value=''; ph.textContent=phText||'— 請選擇 —'; sel.appendChild(ph);
+  (opts||[]).forEach(function(o){ var op=el('option',null,o); op.value=o; sel.appendChild(op); });
+  sel.value=cur||'';
+  sel.onchange=function(){onch(sel.value);};
+  return sel;
+}
+function makeAddOpt(f, key, after){
+  var b=el('button','addopt','＋新增選項'); b.type='button';
+  b.onclick=function(){
+    var v=prompt('新增選項：');
+    if(!v||!v.trim())return; v=v.trim();
+    b.disabled=true;
+    fetch('/api/option',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fieldId:f.id,key:key,value:v})})
+      .then(function(r){return r.json();}).then(function(res){
+        b.disabled=false;
+        if(res&&res.options){ f[key]=res.options; toast('已新增選項「'+v+'」'); if(after)after(); }
+        else toast('新增失敗',true);
+      }).catch(function(){b.disabled=false;toast('新增失敗',true);});
+  };
+  return b;
+}
+
+/* ---------- carryover ---------- */
+function pullCarryover(manual){
+  var tf=DATA.fields.filter(function(f){return f.type==='tracklist'&&f.carryover;});
+  if(!tf.length)return;
+  var date=$('date').value; if(!date)return;
+  fetch('/api/carryover?date='+encodeURIComponent(date)).then(function(r){return r.json();}).then(function(res){
+    if(!res||!res.items||!res.items.length){ if(manual)toast('沒有可帶入的未結案件'); return; }
+    var added=0;
+    res.items.forEach(function(it){
+      var f=tf.filter(function(x){return x.id===it.fieldId;})[0]; if(!f)return;
+      var arr=STATE[f.id]; if(!Array.isArray(arr)){arr=[];STATE[f.id]=arr;}
+      var dup=arr.some(function(x){return (x.text||'').trim()===it.text;});
+      if(dup)return;
+      arr.push({text:it.text,progress:'',status:(f.statusOptions||[])[0]||'持續追蹤',carried:true,prevProgress:it.progress||''});
+      added++;
+    });
+    if(added){
+      save();
+      tf.forEach(function(f){var b=$('f_'+f.id); if(b&&b._redraw)b._redraw();});
+      toast('已帶入 '+added+' 件昨日（'+(res.date||'')+'）未結案件');
+    } else if(manual){ toast('未結案件都已在清單中'); }
+  }).catch(function(){ if(manual)toast('帶入失敗，請稍後再試',true); });
+}
+$('date').addEventListener('change',function(){save();});
+
+/* ---------- counts / persist ---------- */
+function metrics(){
+  var counts={}, tasks=0, tasksDone=0, escal=0, trackOpen=0;
+  DATA.fields.forEach(function(f){
+    var v=STATE[f.id];
+    if(f.type==='caselist'){
+      var a=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();});
+      if(a.length)counts[f.id]=a.length;
+      escal+=a.filter(function(x){return x.escalate;}).length;
+    } else if(f.type==='helplist'){
+      var a2=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();});
+      if(a2.length)counts[f.id]=a2.length;
+    } else if(f.type==='task_status'){
+      var list=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();});
+      if(list.length)counts[f.id]=list.length;
+      tasks+=list.length;
+      tasksDone+=list.filter(function(x){return x.status===((f.statusOptions||['完成'])[0]);}).length;
+    } else if(f.type==='tracklist'){
+      var tl=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();});
+      if(tl.length)counts[f.id]=tl.length;
+      trackOpen+=tl.filter(function(x){return x.status!=='已結案';}).length;
+    }
+  });
+  return {counts:counts,tasks:tasks,tasksDone:tasksDone,escal:escal,trackOpen:trackOpen};
+}
+function recount(){
+  var m=metrics();
+  var hard=0, help=0;
+  DATA.fields.forEach(function(f){
+    if(f.type==='caselist'&&f.escalate&&m.counts[f.id])hard+=m.counts[f.id];
+    if(f.type==='helplist'&&m.counts[f.id])help+=m.counts[f.id];
+  });
+  $('cHard').textContent=hard; $('cHelp').textContent=help;
+  $('cTask').textContent=m.tasks; $('cTrack').textContent=m.trackOpen;
+}
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify({name:$('name').value,date:$('date').value,state:STATE})); }catch(e){}
+}
+function restore(){
+  try{
+    var raw=localStorage.getItem(LS_KEY); if(!raw)return; var d=JSON.parse(raw);
+    if(d.name)$('name').value=d.name;
+    if(d.date)$('date').value=d.date;
+    if(d.state){ for(var k in d.state) STATE[k]=d.state[k];
+      if(STATE._shift){ [].forEach.call($('shiftSeg').children,function(x){x.classList.toggle('on',x.textContent===STATE._shift);}); }
+    }
+  }catch(e){}
+}
+$('name').addEventListener('input',save);
+
+/* ---------- summary text ---------- */
+function summaryText(){
+  var L=[]; L.push('【'+(DATA.title||'客服日回報表')+'】');
+  L.push('班別：'+(STATE._shift||'')+'　姓名：'+($('name').value||'')+'　日期：'+($('date').value||''));
+  DATA.fields.forEach(function(f){
+    var v=STATE[f.id]; L.push(''); L.push('■ '+f.label);
+    if(f.type==='text'){ L.push((v||'').trim()||'（無）'); }
+    else if(f.type==='select_text'){ v=v||{}; var s=(v.option||'')+(v.text?'：'+v.text:''); L.push(s||'（無）'); }
+    else if(f.type==='caselist'){
+      var a=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();});
+      if(!a.length)L.push('（無）'); else a.forEach(function(x,i){
+        L.push((i+1)+'. ['+(x.platform||'?')+']'+(x.customer?'【'+x.customer+'】':'')+(x.reason?'('+x.reason+')':'')+' '+x.text+(x.escalate?' ⚠需主管介入':''));
+      });
+    }
+    else if(f.type==='helplist'){
+      var a2=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();});
+      if(!a2.length)L.push('（無）'); else a2.forEach(function(x,i){L.push((i+1)+'. '+(x.helper||'?')+' → '+(x.helpee||'?')+'：'+x.text);});
+    }
+    else if(f.type==='task_status'){
+      var a3=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();});
+      if(!a3.length)L.push('（無）'); else a3.forEach(function(x,i){L.push((i+1)+'. '+x.text+'（'+(x.status||'未標記')+(x.reason?'：'+x.reason:'')+'）');});
+    }
+    else if(f.type==='tracklist'){
+      var a4=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();});
+      if(!a4.length)L.push('（無）'); else a4.forEach(function(x,i){L.push((i+1)+'. '+x.text+(x.progress?'｜進度：'+x.progress:'')+'（'+(x.status||'')+'）');});
+    }
+  });
+  return L.join('\n');
+}
+$('copyBtn').onclick=function(){
+  var txt=summaryText();
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){toast('已複製摘要');},function(){fallbackCopy(txt);}); }
+  else fallbackCopy(txt);
+};
+function fallbackCopy(txt){ var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('已複製摘要');}catch(e){toast('複製失敗',true);}document.body.removeChild(ta); }
+
+/* ---------- submit ---------- */
+$('submitBtn').onclick=function(){
+  if(LOCKED)return;
+  var name=$('name').value.trim(), date=$('date').value, shift=STATE._shift||'';
+  if(!name){toast('請填寫姓名',true);return;}
+  if(!date){toast('請選擇日期',true);return;}
+  // 驗證：交辦事項有內容必須有狀態；非「完成」必填原因
+  for(var fi=0;fi<DATA.fields.length;fi++){
+    var f=DATA.fields[fi];
+    if(f.type!=='task_status')continue;
+    var opts=f.statusOptions||['完成','部分完成','未完成'];
+    var list=(Array.isArray(STATE[f.id])?STATE[f.id]:[]).filter(function(x){return x&&(x.text||'').trim();});
+    for(var j=0;j<list.length;j++){
+      if(!list[j].status){toast('「'+f.label+'」第'+(j+1)+'項尚未標記完成狀態',true);return;}
+      if(list[j].status!==opts[0]&&!(list[j].reason||'').trim()){toast('「'+f.label+'」第'+(j+1)+'項為'+list[j].status+'，請填原因與預計完成時間',true);return;}
+    }
+  }
+  var m=metrics();
+  var fields={};
+  DATA.fields.forEach(function(f){
+    var v=STATE[f.id];
+    if(f.type==='text') fields[f.id]=(v||'').trim();
+    else if(f.type==='select_text'){ v=v||{}; fields[f.id]={option:v.option||'',text:(v.text||'').trim()}; }
+    else if(f.type==='caselist') fields[f.id]=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();}).map(function(x){return {platform:x.platform||'',customer:(x.customer||'').trim(),reason:x.reason||'',text:(x.text||'').trim(),escalate:!!x.escalate};});
+    else if(f.type==='helplist') fields[f.id]=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();}).map(function(x){return {helper:(x.helper||'').trim(),helpee:(x.helpee||'').trim(),text:(x.text||'').trim()};});
+    else if(f.type==='task_status') fields[f.id]=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();}).map(function(x){return {text:(x.text||'').trim(),status:x.status||'',reason:(x.reason||'').trim()};});
+    else if(f.type==='tracklist') fields[f.id]=(Array.isArray(v)?v:[]).filter(function(x){return x&&(x.text||'').trim();}).map(function(x){return {text:(x.text||'').trim(),progress:(x.progress||'').trim(),status:x.status||'',carried:!!x.carried};});
+  });
+  var payload={pos:shift,name:name,date:date,fields:fields,metrics:m};
+  var btn=$('submitBtn'); btn.disabled=true; btn.textContent='送出中…';
+  fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(function(r){return r.json().then(function(j){return {status:r.status,j:j};});})
+    .then(function(o){
+      if(o.status===200){ lockUI(); try{localStorage.removeItem(LS_KEY);}catch(e){} }
+      else { btn.disabled=false; btn.textContent='送出回報'; toast(o.j.error||'送出失敗',true); if(o.j.locked)lockUI(); }
+    }).catch(function(){ btn.disabled=false; btn.textContent='送出回報'; toast('連線失敗，請稍後再試',true); });
+};
+function lockUI(){
+  LOCKED=true;
+  var wrap=document.querySelector('.wrap');
+  var box=el('div','locked'); box.innerHTML='✓ 回報已送出並鎖定<br><span style="font-weight:400;font-size:13px">如需修改，請聯繫主管在後台處理。</span>';
+  wrap.insertBefore(box, wrap.firstChild);
+  window.scrollTo(0,0);
+  $('submitBtn').disabled=true; $('submitBtn').textContent='已送出';
+}
+
+loadTpl(4);
+</script>
+</body>
+</html>

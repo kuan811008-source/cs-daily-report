@@ -1,0 +1,51 @@
+{
+  "title": "客服日回報表",
+  "shifts": ["早班", "晚班"],
+  "fields": [
+    {
+      "id": "hard_cases",
+      "type": "caselist",
+      "label": "疑難案件（5次以上回覆或逾1週未結）",
+      "platformOptions": ["LINE", "FB"],
+      "customer": true,
+      "reasonOptions": ["等廠商回覆", "等客戶回覆", "退換貨處理", "物流問題", "系統/訂單問題", "其他"],
+      "escalate": true,
+      "hint": "每一件按「＋新增案件」；填客戶識別（暱稱/訂單號）方便跨日追蹤，勾「需主管介入」主管後台會特別標示。"
+    },
+    {
+      "id": "resolved3",
+      "type": "caselist",
+      "label": "3 次內有效回應案件",
+      "platformOptions": ["LINE", "FB"],
+      "hint": "值得記錄的快速解決案件，每一件按「＋新增案件」。"
+    },
+    {
+      "id": "mutual_help",
+      "type": "helplist",
+      "label": "新舊人互助事蹟",
+      "hint": "記錄誰協助誰＋具體內容；件數會自動列入月度彙總。"
+    },
+    {
+      "id": "night_handover",
+      "type": "select_text",
+      "label": "交接晚班對象",
+      "options": [],
+      "hint": "從下拉選擇交接對象（可自行新增選項），備註未完事項與注意點。"
+    },
+    {
+      "id": "supervisor_task",
+      "type": "task_status",
+      "label": "主管交辦事項",
+      "statusOptions": ["完成", "部分完成", "未完成"],
+      "hint": "每項交辦按「＋新增」；非「完成」時請填原因與預計完成時間。"
+    },
+    {
+      "id": "tracking",
+      "type": "tracklist",
+      "label": "今日追蹤問題件＆進度",
+      "statusOptions": ["持續追蹤", "已結案"],
+      "carryover": true,
+      "hint": "昨日標「持續追蹤」的案件會自動帶入，只需更新進度或結案；新問題按「＋新增」。"
+    }
+  ]
+}
