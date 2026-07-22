@@ -57,8 +57,13 @@ td.l,th.l{text-align:left}
 .badge.st2{background:var(--failBg);color:var(--fail)}
 .badge.carried{background:#e0e7ff;color:#4f46e5}
 /* template editor */
-.tf{border:1.5px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:#f8fafc}
+.tf{border:1.5px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:#f8fafc;transition:border-color .12s,box-shadow .12s}
+.tf.dragging{opacity:.45}
+.tf.dragover{border-color:var(--brand);box-shadow:0 0 0 2px #ede9fe}
 .tf .head{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.tf .grab{cursor:grab;font-size:15px;color:var(--muted);padding:2px 6px;border-radius:6px;user-select:none;touch-action:none}
+.tf .grab:hover{background:#ede9fe;color:var(--brand)}
+.tf .grab:active{cursor:grabbing}
 .tf .type{font-size:11px;font-weight:800;background:#ede9fe;color:var(--brand);border-radius:999px;padding:2px 9px}
 .tf .mv{border:1.5px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;font-size:13px;padding:2px 8px}
 .tf input[type=text],.tf textarea{width:100%;margin:3px 0;font-size:13px;padding:7px 9px}
@@ -294,11 +299,29 @@ $('tplBtn').onclick=function(){
   renderTplFields();
   $('tplModal').classList.add('show');
 };
+var DRAG_SRC=null;
 function renderTplFields(){
   var box=$('tplFields'); box.innerHTML='';
   (EDIT.fields||[]).forEach(function(f,i){
     var d=el('div','tf');
+    // 拖曳排序：抓 ☰ 才能拖（避免干擾輸入框選字）
+    d.addEventListener('dragstart',function(e){DRAG_SRC=i;d.classList.add('dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',String(i));}catch(err){}}});
+    d.addEventListener('dragend',function(){DRAG_SRC=null;d.draggable=false;[].forEach.call(box.children,function(x){x.classList.remove('dragging','dragover');});});
+    d.addEventListener('dragover',function(e){e.preventDefault();if(DRAG_SRC!=null&&DRAG_SRC!==i)d.classList.add('dragover');});
+    d.addEventListener('dragleave',function(){d.classList.remove('dragover');});
+    d.addEventListener('drop',function(e){
+      e.preventDefault();
+      if(DRAG_SRC==null||DRAG_SRC===i)return;
+      var moved=EDIT.fields.splice(DRAG_SRC,1)[0];
+      EDIT.fields.splice(i,0,moved);
+      DRAG_SRC=null; renderTplFields();
+    });
     var head=el('div','head');
+    var grab=el('span','grab','☰'); grab.title='拖曳排序';
+    grab.addEventListener('mousedown',function(){d.draggable=true;});
+    grab.addEventListener('touchstart',function(){d.draggable=true;},{passive:true});
+    d.addEventListener('mouseup',function(){if(DRAG_SRC==null)d.draggable=false;});
+    head.appendChild(grab);
     var typeNames={caselist:'案件清單',helplist:'互助清單',task_status:'交辦清單',tracklist:'追蹤清單',select_text:'下拉＋備註',text:'純文字'};
     head.appendChild(el('span','type',typeNames[f.type]||f.type));
     var up=el('button','mv','↑');up.onclick=function(){if(i>0){EDIT.fields.splice(i-1,0,EDIT.fields.splice(i,1)[0]);renderTplFields();}};
