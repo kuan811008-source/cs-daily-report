@@ -87,7 +87,7 @@ function summarize(subs) {
   const g = {};
   subs.forEach(s => {
     const k = s.name + '|' + s.pos;
-    if (!g[k]) g[k] = { name: s.name, pos: s.pos, days: 0, counts: {}, tasks: 0, tasksDone: 0, escal: 0, trackOpen: 0 };
+    if (!g[k]) g[k] = { name: s.name, pos: s.pos, days: 0, counts: {}, tasks: 0, tasksDone: 0, escal: 0, trackOpen: 0, scoreSum: 0, scoreDays: 0 };
     const G = g[k]; G.days++;
     const m = s.metrics || {};
     const c = m.counts || {};
@@ -96,6 +96,7 @@ function summarize(subs) {
     G.tasksDone += (Number(m.tasksDone) || 0);
     G.escal += (Number(m.escal) || 0);
     if (G.days === 1) G.trackOpen = Number(m.trackOpen) || 0; // subs 依日期新→舊，第一筆即該員最新的未結件數
+    if (s.review && s.review.score != null && s.review.score !== '') { G.scoreSum += Number(s.review.score) || 0; G.scoreDays++; }
   });
   return Object.values(g)
     .map(G => Object.assign(G, {
@@ -211,6 +212,22 @@ const server = http.createServer(async (req, res) => {
         await db.execute({ sql: 'DELETE FROM cs_submissions WHERE id=?', args: [u.searchParams.get('id')] });
         return send(res, 200, { ok: true });
       }
+      // 主管評分/回饋（每筆；回報送出後 24 小時自動鎖定，之後無法再編輯）
+      if (pn === '/api/admin/review' && req.method === 'POST') {
+        const id = u.searchParams.get('id');
+        const b = await readBody(req);
+        const r = await db.execute({ sql: 'SELECT payload, received_at FROM cs_submissions WHERE id=?', args: [id] });
+        if (!r.rows.length) return send(res, 404, { error: '找不到該筆回報' });
+        if (Date.now() - new Date(r.rows[0].received_at).getTime() > 24 * 3600 * 1000)
+          return send(res, 403, { error: '此回報送出已超過 24 小時，主管評分已鎖定，無法再編輯。', locked: true });
+        const payload = JSON.parse(r.rows[0].payload);
+        payload.review = {
+          score: (b.score === '' || b.score == null) ? null : Number(b.score),
+          comment: String(b.comment || '')
+        };
+        await db.execute({ sql: 'UPDATE cs_submissions SET payload=? WHERE id=?', args: [JSON.stringify(payload), id] });
+        return send(res, 200, { ok: true });
+      }
       // 主管編輯回報表範本
       if (pn === '/api/admin/template' && req.method === 'POST') {
         const b = await readBody(req);
@@ -223,12 +240,13 @@ const server = http.createServer(async (req, res) => {
         const tpl = await getTemplate();
         const fields = tpl.fields || [];
         const subs = (await listSubs(m, null)).sort((a, b) => a.date.localeCompare(b.date));
-        const head = ['日期', '班別', '姓名'].concat(fields.map(f => f.label)).concat(['收到時間']);
+        const head = ['日期', '班別', '姓名'].concat(fields.map(f => f.label)).concat(['主管評分', '主管回饋', '收到時間']);
         const rows = [head.map(csv).join(',')];
         subs.forEach(s => {
           const line = [s.date, s.pos, s.name];
           fields.forEach(f => line.push(flatten(f, (s.fields || {})[f.id])));
-          line.push(s.receivedAt);
+          const rv = s.review || {};
+          line.push(rv.score == null ? '' : rv.score, rv.comment || '', s.receivedAt);
           rows.push(line.map(csv).join(','));
         });
         return send(res, 200, '﻿' + rows.join('\r\n'), { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="cs_report_' + (m || 'all') + '.csv"' });

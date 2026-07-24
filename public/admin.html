@@ -203,14 +203,16 @@ function renderSum(){
   var resIds=fieldsByType('caselist',function(f){return !f.escalate;});
   var helpIds=fieldsByType('helplist');
   var t=$('sumTbl');
-  var h='<tr><th class="l">姓名</th><th>班別</th><th>回報天數</th><th>疑難</th><th>有效回應</th><th>互助</th><th>交辦完成率</th><th>需介入</th><th>追蹤未結</th></tr>';
-  if(!SUMMARY.length){t.innerHTML=h+'<tr><td colspan="9" class="empty">本月尚無回報</td></tr>';return;}
+  var h='<tr><th class="l">姓名</th><th>班別</th><th>回報天數</th><th>疑難</th><th>有效回應</th><th>互助</th><th>交辦完成率</th><th>需介入</th><th>追蹤未結</th><th>主管加減分</th></tr>';
+  if(!SUMMARY.length){t.innerHTML=h+'<tr><td colspan="10" class="empty">本月尚無回報</td></tr>';return;}
   SUMMARY.forEach(function(G){
+    var sc=G.scoreDays?((G.scoreSum>0?'+':'')+G.scoreSum):'—';
     h+='<tr><td class="l"><b>'+esc(G.name)+'</b></td><td><span class="pill">'+esc(G.pos)+'</span></td><td>'+G.days+'</td>'
       +'<td>'+cnt(G.counts,hardIds)+'</td><td>'+cnt(G.counts,resIds)+'</td><td class="good">'+cnt(G.counts,helpIds)+'</td>'
       +'<td>'+(G.taskRate==null?'—':'<b class="'+(G.taskRate>=80?'good':(G.taskRate<50?'warn':''))+'">'+G.taskRate+'%</b> <span class="note">('+G.tasksDone+'/'+G.tasks+')</span>')+'</td>'
       +'<td>'+(G.escal?'<span class="warn">'+G.escal+'</span>':'0')+'</td>'
-      +'<td>'+(G.trackOpen?'<span class="warn">'+G.trackOpen+'</span>':'0')+'</td></tr>';
+      +'<td>'+(G.trackOpen?'<span class="warn">'+G.trackOpen+'</span>':'0')+'</td>'
+      +'<td><b class="'+(G.scoreSum>0?'good':(G.scoreSum<0?'warn':''))+'">'+sc+'</b>'+(G.scoreDays?' <span class="note">('+G.scoreDays+'天)</span>':'')+'</td></tr>';
   });
   t.innerHTML=h;
 }
@@ -220,18 +222,22 @@ function renderDay(){
   var resIds=fieldsByType('caselist',function(f){return !f.escalate;});
   var helpIds=fieldsByType('helplist');
   var t=$('dayTbl');
-  var h='<tr><th>日期</th><th>班別</th><th class="l">姓名</th><th>疑難</th><th>需介入</th><th>有效</th><th>互助</th><th>交辦</th><th>追蹤未結</th><th>操作</th></tr>';
+  var h='<tr><th>日期</th><th>班別</th><th class="l">姓名</th><th>疑難</th><th>需介入</th><th>有效</th><th>互助</th><th>交辦</th><th>追蹤未結</th><th>評分</th><th>操作</th></tr>';
   var list=SUBS;
   if($('escOnly').checked) list=list.filter(function(s){return (s.metrics||{}).escal>0;});
-  if(!list.length){t.innerHTML=h+'<tr><td colspan="10" class="empty">'+($('escOnly').checked?'沒有需主管介入的回報':'尚無回報')+'</td></tr>';return;}
+  if(!list.length){t.innerHTML=h+'<tr><td colspan="11" class="empty">'+($('escOnly').checked?'沒有需主管介入的回報':'尚無回報')+'</td></tr>';return;}
   list.forEach(function(s){
     var m=s.metrics||{};
+    var rv=s.review||{};
+    var rvCell = rv.score!=null ? '<b class="'+(rv.score>0?'good':(rv.score<0?'warn':''))+'">'+(rv.score>0?'+':'')+rv.score+'</b>'+(rv.comment?' 💬':'')
+                : (reviewLocked(s)?'<span class="note">🔒</span>':'<span class="note">未評</span>');
     h+='<tr><td>'+esc(s.date)+'</td><td><span class="pill">'+esc(s.pos)+'</span></td><td class="l"><b>'+esc(s.name)+'</b></td>'
       +'<td>'+cnt(m.counts,hardIds)+'</td>'
       +'<td>'+(m.escal?'<span class="warn">⚠'+m.escal+'</span>':'—')+'</td>'
       +'<td>'+cnt(m.counts,resIds)+'</td><td>'+cnt(m.counts,helpIds)+'</td>'
       +'<td>'+(m.tasks?(m.tasksDone+'/'+m.tasks):'—')+'</td>'
       +'<td>'+(m.trackOpen?('<span class="warn">'+m.trackOpen+'</span>'):'0')+'</td>'
+      +'<td>'+rvCell+'</td>'
       +'<td><button class="view" onclick="showDetail(\''+s.id+'\')">詳情</button><button class="del" onclick="delSub(\''+s.id+'\',\''+esc(s.name)+'\',\''+esc(s.date)+'\')">刪除</button></td></tr>';
   });
   t.innerHTML=h;
@@ -245,6 +251,9 @@ function delSub(id,name,date){
 }
 
 /* ---------- detail ---------- */
+function reviewLocked(s){
+  return (Date.now()-new Date(s.receivedAt).getTime()) > 24*3600*1000;
+}
 function showDetail(id){
   var s=SUBS.filter(function(x){return x.id===id;})[0]; if(!s)return;
   var b=$('detailBody');
@@ -254,8 +263,50 @@ function showDetail(id){
     var v=(s.fields||{})[f.id];
     html+='<div class="dsec"><h3>'+esc(f.label)+'</h3>'+renderVal(f,v)+'</div>';
   });
+  html+=reviewSection(s);
   b.innerHTML=html;
+  bindReview(s);
   $('detailModal').classList.add('show');
+}
+function reviewSection(s){
+  var rv=s.review||{};
+  var locked=reviewLocked(s);
+  var html='<div class="dsec"><h3>⭐ 主管評分與回饋'+(locked?'　<span class="badge esc">🔒 已鎖定（超過24小時）</span>':'　<span class="note" style="font-weight:400">送出後24小時內可評，逾時自動鎖定</span>')+'</h3>';
+  if(locked){
+    html+='<div class="dcard">'
+      +(rv.score!=null?'<span class="t">加減分：'+(rv.score>0?'+':'')+rv.score+'</span>':'<span class="note">未評分</span>')
+      +(rv.comment?'<div class="sub">'+esc(rv.comment).replace(/\n/g,'<br>')+'</div>':'')
+      +'</div>';
+  }else{
+    html+='<div class="dcard">'
+      +'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'
+      +'<label style="font-size:12.5px;font-weight:700;color:var(--muted)">加減分</label>'
+      +'<input type="number" id="rvScore" step="1" placeholder="例：+2 或 -1" style="width:120px" value="'+(rv.score!=null?rv.score:'')+'">'
+      +'<span class="note">正數＝加分、負數＝減分，可不填</span></div>'
+      +'<textarea id="rvComment" placeholder="文字回饋（給同事看的評語或給自己的備忘）…" style="width:100%;min-height:64px">'+esc(rv.comment||'')+'</textarea>'
+      +'<div style="margin-top:8px;text-align:right"><button class="btn brand sm" id="rvSave">儲存評分</button></div>'
+      +'</div>';
+  }
+  return html+'</div>';
+}
+function bindReview(s){
+  var btn=$('rvSave'); if(!btn)return;
+  btn.onclick=function(){
+    var score=$('rvScore').value.trim();
+    var comment=$('rvComment').value;
+    btn.disabled=true;btn.textContent='儲存中…';
+    api('/api/admin/review?id='+encodeURIComponent(s.id),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({score:score,comment:comment})})
+      .then(function(o){
+        btn.disabled=false;btn.textContent='儲存評分';
+        if(o.status===200){
+          s.review={score:(score===''?null:Number(score)),comment:comment};
+          toast('已儲存評分');load();
+        }else{
+          toast(o.j.error||'儲存失敗',true);
+          if(o.j.locked){showDetail(s.id);}
+        }
+      });
+  };
 }
 function stBadge(f,st){
   var opts=f.statusOptions||[]; var i=opts.indexOf(st);
